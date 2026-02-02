@@ -4,4 +4,3 @@ archive/
 __pycache__/
 .env
 history.json
-prompts.json
