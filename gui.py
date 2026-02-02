@@ -18,7 +18,14 @@ import utils
 HISTORY_FILE = "history.json"
 PROMPTS_FILE = "prompts.json"
 OUTPUT_DIR = "outputs"
-DEFAULT_MODELS = ["Nano-Banana-Pro", "Qwen-Image", "DALL-E-3", "StableDiffusionXL", "Playground-v2.5"]
+DEFAULT_MODELS = [
+        "Playground-v2.5",
+        "StableDiffusionXL",
+        "DALL-E-3",
+        "Nano-Banana-Pro",
+        "Qwen-Image",
+        "Flux-Pro"
+    ]
 
 # Sci-Fi / Tech Theme Stylesheet
 TECH_STYLESHEET = """
