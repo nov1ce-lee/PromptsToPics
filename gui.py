@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QTableWidget, QTableWidgetItem, QHeaderView, QTabWidget,
                              QInputDialog, QGroupBox, QFormLayout, QMenu, QAbstractItemView)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize, QPoint
-from PyQt6.QtGui import QPixmap, QAction, QIcon, QFont, QColor
+from PyQt6.QtGui import QPixmap, QAction, QIcon, QFont, QColor, QPainter
 from PIL import Image
 
 import utils
@@ -142,6 +142,12 @@ class ImageLabel(QLabel):
         super().__init__(text)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.original_pixmap = None
+        self.scaled_pixmap = None
+        self.scale_factor = 1.0
+        self.offset = QPoint(0, 0)
+        self.last_mouse_pos = QPoint(0, 0)
+        self.is_panning = False
+        
         self.setStyleSheet("""
             border: 2px dashed #444; 
             background-color: #1a1a20; 
@@ -149,32 +155,105 @@ class ImageLabel(QLabel):
             font-weight: bold; 
             letter-spacing: 2px;
         """)
+        self.setMouseTracking(True)
         
     def set_image(self, file_path):
-        if os.path.exists(file_path):
+        if file_path and os.path.exists(file_path):
             self.original_pixmap = QPixmap(file_path)
             self.setText("")
-            self.update_display()
+            self.reset_view()
             return True
         else:
-            self.original_pixmap = None
-            self.setText("IMAGE MISSING")
+            self.clear_image()
             return False
+
+    def clear_image(self):
+        self.original_pixmap = None
+        self.scaled_pixmap = None
+        self.setText("NO SIGNAL")
+        self.update()
+
+    def reset_view(self):
+        if self.original_pixmap:
+            # Calculate initial scale to fit
+            s = self.size()
+            ps = self.original_pixmap.size()
+            
+            if not ps.isEmpty():
+                width_ratio = s.width() / ps.width()
+                height_ratio = s.height() / ps.height()
+                self.scale_factor = min(width_ratio, height_ratio, 1.0)
+            else:
+                self.scale_factor = 1.0
+                
+            self.offset = QPoint(0, 0)
+            self.update_display()
+
+    def update_display(self):
+        if self.original_pixmap:
+            new_size = self.original_pixmap.size() * self.scale_factor
+            if not new_size.isEmpty():
+                self.scaled_pixmap = self.original_pixmap.scaled(
+                    new_size, 
+                    Qt.AspectRatioMode.KeepAspectRatio, 
+                    Qt.TransformationMode.SmoothTransformation
+                )
+        self.update()
             
     def resizeEvent(self, event):
-        if self.original_pixmap:
-            self.update_display()
+        # We don't auto-resize the image box, but if the window is resized, 
+        # we might want to re-fit? Actually the user said "image box don't auto change with image".
+        # But if the user resizes the window/splitter, we should probably handle it.
+        # For now, let's keep it simple.
         super().resizeEvent(event)
         
-    def update_display(self):
-        if self.original_pixmap and not self.original_pixmap.isNull():
-            # Scale to fit label while keeping aspect ratio
-            scaled = self.original_pixmap.scaled(
-                self.size(), 
-                Qt.AspectRatioMode.KeepAspectRatio, 
-                Qt.TransformationMode.SmoothTransformation
-            )
-            super().setPixmap(scaled)
+    def paintEvent(self, event):
+        # Draw background and text (if any)
+        super().paintEvent(event)
+        
+        if self.original_pixmap and self.scaled_pixmap:
+            painter = QPainter(self)
+            # Calculate center position + offset
+            rect = self.scaled_pixmap.rect()
+            center_pos = self.rect().center() - rect.center() + self.offset
+            painter.drawPixmap(center_pos, self.scaled_pixmap)
+
+    def wheelEvent(self, event):
+        if self.original_pixmap:
+            zoom_in_factor = 1.25
+            zoom_out_factor = 1 / zoom_in_factor
+            
+            if event.angleDelta().y() > 0:
+                self.scale_factor *= zoom_in_factor
+            else:
+                self.scale_factor *= zoom_out_factor
+            
+            # Limit scale
+            self.scale_factor = max(0.01, min(self.scale_factor, 50.0))
+            self.update_display()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.is_panning = True
+            self.last_mouse_pos = event.pos()
+            self.setCursor(Qt.CursorShape.ClosedHandCursor)
+        elif event.button() == Qt.MouseButton.MiddleButton:
+            self.reset_view()
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self.is_panning:
+            delta = event.pos() - self.last_mouse_pos
+            self.offset += delta
+            self.last_mouse_pos = event.pos()
+            self.update()
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.is_panning = False
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+        super().mouseReleaseEvent(event)
 
 # ================= Worker Thread =================
 class GenerationWorker(QThread):
@@ -438,7 +517,26 @@ class PoeImageStudio(QMainWindow):
         right_layout.addWidget(tabs)
         
         # Preview Area
-        right_layout.addWidget(QLabel("PREVIEW:"))
+        preview_header = QHBoxLayout()
+        preview_header.addWidget(QLabel("PREVIEW:"))
+        preview_header.addStretch()
+        self.btn_close_preview = QPushButton("✕")
+        self.btn_close_preview.setFixedSize(24, 24)
+        self.btn_close_preview.setStyleSheet("""
+            QPushButton { 
+                background-color: #b71c1c; 
+                color: white; 
+                border-radius: 12px; 
+                font-weight: bold;
+                padding: 0;
+                font-size: 14px;
+            }
+            QPushButton:hover { background-color: #e53935; }
+        """)
+        self.btn_close_preview.clicked.connect(self.clear_preview)
+        preview_header.addWidget(self.btn_close_preview)
+        right_layout.addLayout(preview_header)
+
         self.preview_label = ImageLabel("NO SIGNAL")
         self.preview_label.setMinimumHeight(350)
         right_layout.addWidget(self.preview_label)
@@ -684,6 +782,11 @@ class PoeImageStudio(QMainWindow):
             self.btn_open_file.setEnabled(True)
         else:
             self.btn_open_file.setEnabled(False)
+
+    def clear_preview(self):
+        self.preview_label.clear_image()
+        self.current_preview_path = None
+        self.btn_open_file.setEnabled(False)
 
     def open_current_file(self):
 

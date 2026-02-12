@@ -16,6 +16,7 @@ A cute pixel art portrait of a young Asian girl with long black hair, wearing a 
 MODEL = "Qwen-Image"
 
 # 3. 生成图片的保存文件名 (如果文件已存在，会自动添加序号，如 book_1.png)
+OUTPUT_DIR = "generated_images"  # 新增：图片保存的文件夹名称
 OUTPUT_FILE = "cute_girl.png"
 
 # 4. 批量生成数量 (设置你想一次生成几张图)
@@ -90,6 +91,11 @@ def main():
     # 去除提示词首尾的空白字符
     clean_prompt = PROMPT.strip()
     
+    # 确保输出目录存在
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+        print(f"已创建输出目录: {OUTPUT_DIR}")
+    
     print("=" * 50)
     print(f"开始批量生成任务")
     print(f"计划生成数量: {BATCH_SIZE}")
@@ -101,8 +107,9 @@ def main():
         print(f"\n[正在执行第 {i+1}/{BATCH_SIZE} 次生成任务]")
         
         try:
-            # 确定当前任务的输出文件名
-            current_output_file = get_unique_filename(OUTPUT_FILE)
+            # 确定当前任务的输出文件名 (包含路径)
+            full_output_path = os.path.join(OUTPUT_DIR, OUTPUT_FILE)
+            current_output_file = get_unique_filename(full_output_path)
             
             # 发送请求给 Poe
             print("正在发送请求，请稍候...")

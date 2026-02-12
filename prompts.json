@@ -14,5 +14,25 @@
     {
         "title": "Castle",
         "content": "game achievement icon, pixel art style, 8-bit aesthetic, a golden metallic castle fortress with towers, minimalist UI design, micro-relief effect created by pixel shading and highlights, gleaming gold texture, set against a solid dark blue shield-shaped background, exquisite pixelated golden ornate border surrounding the shield, clean retro game interface element, isometric view --ar 1:1"
+    },
+    {
+        "title": "探索类「世界行者」",
+        "content": "像素画风格，8-bit 复古游戏成就徽章，等大像素色块，中心是金色像素化的指南针，周围环绕像素化的山脉轮廓，深蓝色像素背景，整体呈方形，边缘有像素化的金色边框，线条清晰，色块分明。"
+    },
+    {
+        "title": "战斗类「不败战神」",
+        "content": "像素画风格，8-bit 复古游戏成就徽章，等大像素色块，中心是像素化的交叉双剑，剑身为红色像素块，剑柄为金色像素块，背景是深灰色像素化的战场硝烟，边缘有像素化的黑色边框，风格硬朗。"
+    },
+    {
+        "title": "解谜类「智慧之眼」",
+        "content": "像素画风格，8-bit 复古游戏成就徽章，等大像素色块，中心是像素化的眼睛图案，瞳孔为蓝色像素块，眼白为白色像素块，周围环绕像素化的齿轮，背景是浅灰色像素化的机械纹理，边缘有像素化的银色边框，风格精密。"
+    },
+    {
+        "title": "生存类「荒野求生」",
+        "content": "像素画风格，正方形图案，8-bit 复古游戏成就徽章，等大像素色块，中心是像素化的篝火，火焰为红色和橙色像素块，木柴为棕色像素块，背景是深绿色像素化的森林，边缘有像素化的棕色边框，风格粗犷。"
+    },
+    {
+        "title": "竞速类「风驰电掣」",
+        "content": "像素画风格，8-bit 复古游戏成就徽章，等大像素色块，中心是像素化的赛车，车身为红色像素块，轮胎为黑色像素块，背景是深绿色像素化的赛道，边缘有像素化的黄色边框，风格动感。"
     }
 ]
